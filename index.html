@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>京东回调页面</title>
+</head>
+<body>
+  <h1>京东回调页面</h1>
+  <p>正在处理授权请求...</p>
+  <script>
+    // 提取 URL 中的 Authorization Code
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      console.log('Authorization Code:', code);
+      alert('授权成功！Authorization Code: ' + code);
+    } else {
+      console.error('未找到 Authorization Code');
+      alert('授权失败，请重试！');
+    }
+  </script>
+</body>
+</html>
