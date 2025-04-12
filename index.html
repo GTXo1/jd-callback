@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="jd-redirect" content="https://u.jd.com/cJThTpa">
     <title>授权回调页面</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f5f5f5;
+            background-color: #f6f6f6;
             color: #333;
             display: flex;
             justify-content: center;
@@ -19,21 +20,21 @@
         .container {
             background-color: white;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
             text-align: center;
             max-width: 400px;
             width: 90%;
         }
         .loading {
             display: inline-block;
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             border: 4px solid #f3f3f3;
             border-top: 4px solid #e2231a;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -42,6 +43,7 @@
         .message {
             margin-bottom: 15px;
             font-size: 16px;
+            line-height: 1.5;
         }
         .hidden {
             display: none;
@@ -52,6 +54,18 @@
         .error {
             color: #f5222d;
         }
+        .redirect-link {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        .redirect-link:hover {
+            text-decoration: underline;
+        }
+        .redirect-container {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
@@ -61,16 +75,31 @@
             <p class="message">正在处理授权请求...</p>
         </div>
         <div id="success-state" class="hidden">
-            <p class="message success">授权成功</p>
+            <p class="message success">授权成功！</p>
             <p>页面将在<span id="countdown">3</span>秒后关闭</p>
+            <div class="redirect-container">
+                <p>如果页面没有自动关闭，请点击下方链接：</p>
+                <a href="https://u.jd.com/cJThTpa" class="redirect-link" id="manual-redirect">继续</a>
+            </div>
         </div>
         <div id="error-state" class="hidden">
             <p class="message error">授权失败</p>
             <p id="error-message"></p>
+            <div class="redirect-container">
+                <p>您可以尝试重新授权：</p>
+                <a href="https://u.jd.com/cJThTpa" class="redirect-link">重试</a>
+            </div>
         </div>
     </div>
 
     <script>
+        // 授权数据
+        window.AUTH_DATA = {
+            success: true,
+            timestamp: new Date().getTime(),
+            redirectUrl: "https://u.jd.com/cJThTpa"  // 这是将要被小程序获取的链接
+        };
+        
         // 解析URL参数函数
         function getQueryParams() {
             const params = {};
@@ -79,89 +108,96 @@
             
             for (let i = 0; i < pairs.length; i++) {
                 const pair = pairs[i].split('=');
-                params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+                if (pair[0]) {
+                    params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+                }
             }
             
             return params;
         }
 
-        // 主函数
+        // 处理回调过程
         function processCallback() {
             // 获取URL参数
             const params = getQueryParams();
-            
-            // 记录URL参数用于调试
             console.log('回调参数:', params);
             
-            // 假设参数中有code表示成功，有error表示失败
-            if (params.error) {
-                showError(params.error_description || '授权过程中发生错误');
-                return;
-            }
+            // 更新手动跳转链接
+            document.getElementById('manual-redirect').href = window.AUTH_DATA.redirectUrl;
             
+            // 判断是否有code参数
             if (params.code) {
-                // 这里可以添加与后端通信的代码，发送code获取token
-                // 示例中简化处理，直接显示成功
+                // 有code表示授权成功
                 handleSuccess(params.code);
+            } else if (params.error) {
+                // 有error表示授权失败
+                showError(params.error_description || '处理授权请求时出错');
             } else {
-                // 没有code和error，可能是直接访问页面
-                showError('无效的授权请求');
+                // 无参数，可能是直接访问
+                simulateAuthProcess();
             }
         }
 
-        // 显示错误
+        // 模拟授权过程
+        function simulateAuthProcess() {
+            // 模拟短暂的处理时间
+            setTimeout(() => {
+                handleSuccess('simulated_code');
+            }, 1500);
+        }
+
+        // 显示错误信息
         function showError(message) {
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('error-state').classList.remove('hidden');
-            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-message').textContent = message || '未知错误';
         }
 
-        // 处理成功情况
+        // 处理授权成功
         function handleSuccess(code) {
+            // 隐藏加载状态，显示成功状态
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('success-state').classList.remove('hidden');
             
-            // 准备返回的数据
-            const responseData = {
-                success: true,
-                code: code,
-                redirectUrl: 'https://u.jd.com/' + (code.substring(0, 6) || 'arGuva9')
-            };
+            // 更新redirectUrl的值，添加code参数
+            window.AUTH_DATA.code = code;
             
-            // 如果是在iframe或窗口中打开，向父窗口发送消息
+            // 如果是在iframe或弹窗中打开，向父窗口发送消息
             if (window.opener || window.parent !== window) {
                 try {
-                    (window.opener || window.parent).postMessage(responseData, '*');
+                    (window.opener || window.parent).postMessage(window.AUTH_DATA, '*');
                 } catch (e) {
                     console.error('发送消息失败:', e);
                 }
             }
             
-            // 倒计时关闭
+            // 开始倒计时
+            startCountdown();
+        }
+        
+        // 开始倒计时
+        function startCountdown() {
             let count = 3;
             const countdownElement = document.getElementById('countdown');
+            
             const interval = setInterval(() => {
                 count--;
                 countdownElement.textContent = count;
+                
                 if (count <= 0) {
                     clearInterval(interval);
-                    // 如果是弹出窗口，则关闭
+                    // 如果是弹出窗口，尝试关闭
                     if (window.opener) {
                         window.close();
                     }
+                    // 自动重定向
+                    window.location.href = window.AUTH_DATA.redirectUrl;
                 }
             }, 1000);
-            
-            // 将数据保存到本地存储，方便其他页面获取
-            try {
-                localStorage.setItem('authData', JSON.stringify(responseData));
-            } catch (e) {
-                console.error('存储数据失败:', e);
-            }
         }
         
-        // 页面加载时执行
+        // 页面加载完成后处理回调
         document.addEventListener('DOMContentLoaded', processCallback);
     </script>
 </body>
-</html>
+</html> 
